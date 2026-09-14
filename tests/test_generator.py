@@ -92,6 +92,23 @@ def test_output_directory_is_created(tmp_path):
     assert out.exists()
 
 
+def test_single_game_clip_not_left_behind(tmp_path):
+    r, e, c, calls = _fakes()
+    out = asyncio.run(generate(_cfg(tmp_path, games=1),
+                               record_fn=r, encode_fn=e, concat_fn=c))
+    assert out.exists()
+    assert not Path(calls['encode'][0]).exists()
+
+
+def test_multi_game_clips_not_left_behind_after_concat(tmp_path):
+    r, e, c, calls = _fakes()
+    out = asyncio.run(generate(_cfg(tmp_path, games=3),
+                               record_fn=r, encode_fn=e, concat_fn=c))
+    assert out.exists()
+    for clip_path in calls['encode']:
+        assert not Path(clip_path).exists()
+
+
 def test_rerun_overwrites_previous_output(tmp_path):
     r, e, c, _ = _fakes()
     cfg = _cfg(tmp_path, games=1)

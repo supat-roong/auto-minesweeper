@@ -54,6 +54,8 @@ async def generate(config: Config, *, record_fn=None, encode_fn=None, concat_fn=
         shutil.move(str(clips[0]), str(final))
     else:
         concat_fn(clips, final)
+        for clip in clips:
+            Path(clip).unlink(missing_ok=True)
 
     log.info("Output: %s", final)
     return final
