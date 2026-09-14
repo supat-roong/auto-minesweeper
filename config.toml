@@ -1,0 +1,21 @@
+[board]
+rows = 16
+cols = 16
+mines = 40
+first_click_safe = true
+
+[video]
+fps = 8
+resolution = "1280x720"
+output_dir = "output"
+headless = true
+
+[overlays]
+move_counter = true
+game_info_banner = true
+probability_heatmap = false
+
+[output]
+games = 1
+name = "minesweeper"
+seed = 0
