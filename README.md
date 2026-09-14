@@ -138,13 +138,11 @@ minesweeper-video-generator/
 ├── main.py                          CLI entry point
 ├── pyproject.toml                   pytest config
 ├── requirements.txt
-├── docs/superpowers/specs/          design docs
-├── docs/superpowers/plans/          implementation plans
 ├── vendor/
 │   └── minesweeper_solver/          git submodule (see Setup)
 ├── web/
 │   ├── board.html                   WinXP-styled board page
-│   └── assets/minesweeper/*.png     30 sprite files, copied verbatim
+│   └── assets/minesweeper/*.png     30 sprite files
 ├── src/
 │   └── minesweeper_video/
 │       ├── __init__.py
@@ -174,7 +172,8 @@ minesweeper-video-generator/
 The Minesweeper-solving logic is vendored as the
 [`minesweeper_solver`](https://github.com/supat-roong/minesweeper_solver) git
 submodule (MIT, same author). The Windows-XP-styled sprite assets in
-`web/assets/minesweeper/` came from `the upstream project`.
+`web/assets/minesweeper/` come from
+[`ShizukuIchi/winXP`](https://github.com/ShizukuIchi/winXP) (MIT).
 
 ## License
 
