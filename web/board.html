@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Minesweeper</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #c0c0c0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    #game-wrap {
+      background: #c0c0c0;
+      border: 3px solid;
+      border-color: #fff #808080 #808080 #fff;
+      padding: 6px;
+      display: inline-block;
+    }
+    #header {
+      background: #c0c0c0;
+      border: 2px solid;
+      border-color: #808080 #fff #fff #808080;
+      padding: 4px 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    #smiley-btn {
+      border: 2px solid; border-color: #fff #808080 #808080 #fff;
+      background: #c0c0c0; padding: 2px;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    #board-wrap { position: relative; display: inline-block; }
+    #board { display: block; cursor: default; }
+    #cursor-cv { position: absolute; top: 0; left: 0; pointer-events: none; display: block; }
+    #move-counter {
+      position: absolute; top: 4px; right: 4px;
+      background: rgba(0,0,0,.7); color: #fff;
+      font: 11px/1.4 Arial; padding: 2px 6px;
+      border-radius: 3px; display: none;
+    }
+
+    #prob-canvas { display: none; vertical-align: top; margin-left: 6px; }
+    #game-info {
+      display: none; text-align: center;
+      font: 11px Arial; color: #444; margin-top: 4px;
+    }
+    #stage {
+      display: flex; flex-direction: row;
+      align-items: center; justify-content: center;
+      gap: 3vw;
+    }
+  </style>
+</head>
+<body>
+<div id="stage">
+<div id="game-wrap">
+  <div id="header">
+    <canvas id="mine-counter" style="background:#000;display:block"></canvas>
+    <div id="smiley-btn"><canvas id="smiley-cv" style="display:block"></canvas></div>
+    <canvas id="timer" style="background:#000;display:block"></canvas>
+  </div>
+  <div style="display:flex;align-items:flex-start">
+    <div id="board-wrap">
+      <canvas id="board"></canvas>
+      <canvas id="cursor-cv"></canvas>
+      <div id="move-counter">Moves: 0</div>
+    </div>
+    <canvas id="prob-canvas"></canvas>
+  </div>
+  <div id="game-info"></div>
+</div>
+</div>
+
+<!-- WinXP sprites – preloaded so they are ready before BOARD.init() is called.
+     Source: github.com/ShizukuIchi/winXP (MIT License) -->
+<div id="sprites" style="display:none" aria-hidden="true">
+  <img id="sp-mine-ceil"  src="assets/minesweeper/mine-ceil.png">
+  <img id="sp-flag"      src="assets/minesweeper/flag.png">
+  <img id="sp-misflagged" src="assets/minesweeper/misflagged.png">
+  <img id="sp-mine-death" src="assets/minesweeper/mine-death.png">
+  <img id="sp-open1"  src="assets/minesweeper/open1.png">
+  <img id="sp-open2"  src="assets/minesweeper/open2.png">
+  <img id="sp-open3"  src="assets/minesweeper/open3.png">
+  <img id="sp-open4"  src="assets/minesweeper/open4.png">
+  <img id="sp-open5"  src="assets/minesweeper/open5.png">
+  <img id="sp-open6"  src="assets/minesweeper/open6.png">
+  <img id="sp-open7"  src="assets/minesweeper/open7.png">
+  <img id="sp-open8"  src="assets/minesweeper/open8.png">
+  <img id="sp-smile"  src="assets/minesweeper/smile.png">
+  <img id="sp-win"    src="assets/minesweeper/win.png">
+  <img id="sp-dead"   src="assets/minesweeper/dead.png">
+  <img id="sp-ohh"    src="assets/minesweeper/ohh.png">
+  <img id="sp-digit0" src="assets/minesweeper/digit0.png">
+  <img id="sp-digit1" src="assets/minesweeper/digit1.png">
+  <img id="sp-digit2" src="assets/minesweeper/digit2.png">
+  <img id="sp-digit3" src="assets/minesweeper/digit3.png">
+  <img id="sp-digit4" src="assets/minesweeper/digit4.png">
+  <img id="sp-digit5" src="assets/minesweeper/digit5.png">
+  <img id="sp-digit6" src="assets/minesweeper/digit6.png">
+  <img id="sp-digit7" src="assets/minesweeper/digit7.png">
+  <img id="sp-digit8" src="assets/minesweeper/digit8.png">
+  <img id="sp-digit9" src="assets/minesweeper/digit9.png">
+  <img id="sp-digit-" src="assets/minesweeper/digit-.png">
+</div>
+
+<script>
+// Sprite keys match the <img id="sp-{key}"> elements above
+const SPRITE_KEYS = [
+  'mine-ceil','flag','misflagged','mine-death',
+  'open1','open2','open3','open4','open5','open6','open7','open8',
+  'smile','win','dead','ohh',
+  'digit0','digit1','digit2','digit3','digit4','digit5','digit6','digit7','digit8','digit9','digit-'
+];
+let sprites = {};
+
+function initSprites() {
+  SPRITE_KEYS.forEach(k => { sprites[k] = document.getElementById('sp-' + k); });
+}
+
+// Scale header canvases to match WinXP proportions relative to current CS.
+// Original WinXP assets: cell=16px, digit=13×23, smiley=17×17.
+function _resizeHeader() {
+  const scale = CS / 16;
+  const dw = Math.round(13 * scale);
+  const dh = Math.round(23 * scale);
+  ['mine-counter', 'timer'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.width = dw * 3; el.height = dh; }
+  });
+  const smileCv = document.getElementById('smiley-cv');
+  if (smileCv) {
+    const sw = Math.round(17 * scale);
+    smileCv.width = sw; smileCv.height = sw;
+  }
+}
+
+function drawFace(state) {
+  // state: 'smile' | 'win' | 'dead' | 'ohh'
+  const cv = document.getElementById('smiley-cv');
+  const cx = cv.getContext('2d');
+  cx.imageSmoothingEnabled = false;
+  cx.clearRect(0, 0, cv.width, cv.height);
+  cx.drawImage(sprites[state], 0, 0, cv.width, cv.height);
+}
+
+function drawCounter(canvasId, value) {
+  const cv = document.getElementById(canvasId);
+  const ctx = cv.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, cv.width, cv.height);
+  const dw = cv.width / 3;
+  const dh = cv.height;
+  const n = Math.max(-99, Math.min(999, Math.floor(value)));
+  let digits;
+  if (n < 0) {
+    digits = ['digit-', ...String(Math.abs(n)).padStart(2, '0').split('').map(d => 'digit' + d)];
+  } else {
+    digits = String(n).padStart(3, '0').split('').map(d => 'digit' + d);
+  }
+  digits.forEach((key, i) => {
+    ctx.drawImage(sprites[key], i * dw, 0, dw, dh);
+  });
+}
+
+window.addEventListener('load', initSprites);
+
+let ROWS = 9, COLS = 9, CS = 32;
+let state = [], nums = [], moves = 0;
+let overlays = {};
+let cursorPos = null, pressedCell = null;
+
+const cv = document.getElementById('board');
+const cx = cv.getContext('2d');
+cx.imageSmoothingEnabled = false;
+const pc = document.getElementById('prob-canvas');
+const px = pc.getContext('2d');
+const cc = document.getElementById('cursor-cv');
+const ccx = cc.getContext('2d');
+
+function drawArrowCursor(ctx, x, y, sz, clicking) {
+  const s = sz / 11;
+  // Outer white outline
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(x, y + 10*s);
+  ctx.lineTo(x + 2.5*s, y + 7*s);
+  ctx.lineTo(x + 4.5*s, y + 12*s);
+  ctx.lineTo(x + 6.5*s, y + 11*s);
+  ctx.lineTo(x + 4.5*s, y + 6.5*s);
+  ctx.lineTo(x + 8*s, y + 6.5*s);
+  ctx.closePath();
+  ctx.stroke();
+  // Black fill
+  ctx.fillStyle = clicking ? '#444' : '#000';
+  ctx.fill();
+}
+
+function renderCursor() {
+  ccx.clearRect(0, 0, cc.width, cc.height);
+  if (!cursorPos) return;
+  const x = cursorPos.x !== undefined ? cursorPos.x : cursorPos.col * CS + CS * 0.05;
+  const y = cursorPos.y !== undefined ? cursorPos.y : cursorPos.row * CS + CS * 0.05;
+  drawArrowCursor(ccx, x, y, CS * 0.65, cursorPos.clicking);
+}
+
+function cell(col, row, st, val) {
+  const x = col * CS, y = row * CS, s = CS;
+
+  // Pressed cell: show as concave (flat) while mouse is held
+  if (pressedCell && pressedCell.r === row && pressedCell.c === col && st === 'closed') {
+    cx.fillStyle = '#bdbdbd'; cx.fillRect(x, y, s, s);
+    cx.fillStyle = '#808080'; cx.fillRect(x, y, s, 1); cx.fillRect(x, y, 1, s);
+    return;
+  }
+
+  // mine-death.png is a complete cell sprite (red bg + mine icon)
+  if (st === 'exploded') {
+    cx.drawImage(sprites['mine-death'], x, y, s, s);
+    return;
+  }
+
+  // Raised 3D button base for closed and flagged cells
+  if (st === 'closed' || st === 'flag') {
+    cx.fillStyle = '#c0c0c0'; cx.fillRect(x, y, s, s);
+    cx.fillStyle = '#fff'; cx.fillRect(x, y, s, 2); cx.fillRect(x, y, 2, s);
+    cx.fillStyle = '#808080'; cx.fillRect(x, y+s-2, s, 2); cx.fillRect(x+s-2, y, 2, s);
+    cx.fillStyle = '#c0c0c0'; cx.fillRect(x+2, y+2, s-4, s-4);
+    if (st === 'flag') cx.drawImage(sprites['flag'], x, y, s, s);
+    return;
+  }
+
+  // Flat inset cell base for open/mine/misflagged (#bdbdbd for contrast vs closed cells)
+  cx.fillStyle = '#bdbdbd'; cx.fillRect(x, y, s, s);
+  cx.fillStyle = '#808080'; cx.fillRect(x, y, s, 1); cx.fillRect(x, y, 1, s);
+
+  if (st === 'open' && val === 0) return;
+  if (st === 'open' && val >= 1 && val <= 8) { cx.drawImage(sprites['open' + val], x, y, s, s); return; }
+  if (st === 'mine') { cx.drawImage(sprites['mine-ceil'], x, y, s, s); return; }
+  if (st === 'misflagged') cx.drawImage(sprites['misflagged'], x, y, s, s);
+}
+
+function render() {
+  cx.clearRect(0,0,cv.width,cv.height);
+  for (let r=0;r<ROWS;r++) for (let c=0;c<COLS;c++) cell(c,r,state[r][c],nums[r][c]);
+}
+
+window.BOARD = {
+  init(r, c) {
+    ROWS = r; COLS = c;
+    CS = Math.min(Math.floor((window.innerWidth * 0.6) / c), Math.floor((window.innerHeight * 0.8) / r), 40);
+    CS = Math.max(CS, 20);
+    cv.width = COLS * CS; cv.height = ROWS * CS;
+    state = Array.from({length: r}, () => Array(c).fill('closed'));
+    nums = Array.from({length: r}, () => Array(c).fill(0));
+    moves = 0;
+    cursorPos = null; pressedCell = null;
+    cc.width = COLS * CS; cc.height = ROWS * CS;
+    _resizeHeader();
+    drawCounter('mine-counter', 0);
+    drawCounter('timer', 0);
+    drawFace('smile');
+    render();
+    renderCursor();
+  },
+  reveal(r,c,v) {
+    state[r][c]='open'; nums[r][c]=v; moves++;
+    if (overlays.move_counter) document.getElementById('move-counter').textContent=`Moves: ${moves}`;
+    render();
+  },
+  flag(r,c) {
+    state[r][c]=state[r][c]==='flag'?'closed':'flag'; render();
+  },
+  explode(r, c) {
+    state[r][c] = 'exploded';
+    drawFace('dead');
+    render();
+  },
+  showAllMines(positions) {
+    for (const [r,c] of positions) { if(state[r][c]!=='exploded'&&state[r][c]!=='flag') state[r][c]='mine'; }
+    render();
+  },
+  win() {
+    drawFace('win');
+  },
+  lose() {
+    drawFace('dead');
+  },
+  autoFlagMines(positions) {
+    for (const [r, c] of positions) {
+      if (state[r][c] === 'closed') state[r][c] = 'flag';
+    }
+    render();
+  },
+  setTimer(n) {
+    drawCounter('timer', n);
+  },
+  setCursor(r, c) {
+    cursorPos = (r !== null && r !== undefined) ? {row: r, col: c, clicking: false} : null;
+    renderCursor();
+  },
+  setCursorAt(x, y, clicking) {
+    cursorPos = {x: +x, y: +y, clicking: !!clicking};
+    renderCursor();
+  },
+  pressMouse(r, c) {
+    pressedCell = {r, c};
+    if (cursorPos) cursorPos.clicking = true;
+    else cursorPos = {row: r, col: c, clicking: true};
+    drawFace('ohh');
+    render();
+    renderCursor();
+  },
+  releaseMouse() {
+    pressedCell = null;
+    if (cursorPos) cursorPos.clicking = false;
+    drawFace('smile');
+    render();
+    renderCursor();
+  },
+  setCounter(n) {
+    drawCounter('mine-counter', n);
+  },
+  setGameInfo(info) {
+    const el=document.getElementById('game-info');
+    el.textContent=`${info.rows}×${info.cols}  |  Mines: ${info.mines}`;
+  },
+  setOverlay(cfg) {
+    overlays={...overlays,...cfg};
+    document.getElementById('move-counter').style.display=cfg.move_counter?'block':'none';
+    document.getElementById('game-info').style.display=cfg.game_info_banner?'block':'none';
+    if (cfg.probability_heatmap) { pc.style.display='inline-block'; }
+  },
+  setProbability(grid) {
+    if (!overlays.probability_heatmap) return;
+    pc.width=COLS*CS; pc.height=ROWS*CS;
+    for (let r=0;r<ROWS;r++) for (let c=0;c<COLS;c++) {
+      const p=grid[r][c];
+      if (p<0) { px.fillStyle='#c0c0c0'; px.fillRect(c*CS,r*CS,CS,CS); continue; }
+      const red=Math.floor(p*255); const grn=Math.floor((1-p)*200+55);
+      px.fillStyle=`rgb(${red},${grn},80)`; px.fillRect(c*CS,r*CS,CS,CS);
+      if (p>0.01&&p<0.99) {
+        px.fillStyle='#000'; px.font=`${Math.max(9,CS/3.5)}px Arial`;
+        px.textAlign='center'; px.textBaseline='middle';
+        px.fillText(p.toFixed(2),c*CS+CS/2,r*CS+CS/2);
+      }
+    }
+  }
+};
+</script>
+</body>
+</html>
