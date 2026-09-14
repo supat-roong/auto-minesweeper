@@ -1,0 +1,3 @@
+[submodule "vendor/minesweeper_solver"]
+	path = vendor/minesweeper_solver
+	url = https://github.com/supat-roong/minesweeper_solver.git

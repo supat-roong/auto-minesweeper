@@ -1,0 +1,7 @@
+[tool.pytest.ini_options]
+# Make the `minesweeper_video` package importable without per-test sys.path hacks.
+pythonpath = ["src"]
+testpaths = ["tests"]
+markers = [
+    "integration: needs external tooling — ffmpeg, Playwright browsers, or the vendored solver submodule. Deselect with `-m 'not integration'`.",
+]
