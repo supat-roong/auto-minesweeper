@@ -1,8 +1,5 @@
-import pytest
 from minesweeper_video.board import Board
 from minesweeper_video.solver_bridge import SolverBridge
-
-pytestmark = pytest.mark.integration  # requires the vendored minesweeper_solver submodule
 
 
 def test_solver_bridge_returns_valid_move():
