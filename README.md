@@ -121,7 +121,7 @@ Run `python main.py --help` for the full list.
 ## Testing
 
 ```bash
-pytest -m "not integration" -v   # fast suite — what CI runs, no external tooling needed
+pytest -m "not integration" -v   # fast suite — what CI runs; needs the solver submodule, but not ffmpeg or Playwright
 pytest                            # full suite — needs ffmpeg, Playwright Chromium, and the submodule checked out
 ```
 
@@ -139,6 +139,7 @@ minesweeper-video-generator/
 ├── pyproject.toml                   pytest config
 ├── requirements.txt
 ├── docs/superpowers/specs/          design docs
+├── docs/superpowers/plans/          implementation plans
 ├── vendor/
 │   └── minesweeper_solver/          git submodule (see Setup)
 ├── web/
@@ -156,10 +157,13 @@ minesweeper-video-generator/
 │       └── generator.py
 └── tests/
     ├── __init__.py
+    ├── conftest.py                  skips solver-dependent modules if submodule absent
     ├── test_board.py
+    ├── test_board_html.py
     ├── test_config.py
     ├── test_assembler.py
     ├── test_generator.py
+    ├── test_main.py
     ├── test_recorder.py
     ├── test_recorder_types.py
     └── test_solver_bridge.py
