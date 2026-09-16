@@ -1,4 +1,4 @@
-# minesweeper-video-generator
+# auto-minesweeper
 
 Generates MP4 videos of an AI solver playing Minesweeper on a configurable
 board. The board is rendered with a classic Windows-XP look, complete with an
@@ -40,8 +40,8 @@ per-game clips are concatenated; the result is moved to `output/<name>.mp4`.
 ## Setup
 
 ```bash
-git clone --recurse-submodules https://github.com/supat-roong/minesweeper-video-generator.git
-cd minesweeper-video-generator
+git clone --recurse-submodules https://github.com/supat-roong/auto-minesweeper.git
+cd auto-minesweeper
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 playwright install chromium
@@ -128,7 +128,7 @@ pytest                            # full suite — needs ffmpeg, Playwright Chro
 ## Project layout
 
 ```
-minesweeper-video-generator/
+auto-minesweeper/
 ├── .github/workflows/ci.yml
 ├── .gitmodules
 ├── .gitignore

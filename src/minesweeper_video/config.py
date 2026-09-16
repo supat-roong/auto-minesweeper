@@ -104,7 +104,7 @@ def _bool(value: str) -> bool:
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
-        prog='minesweeper-video-generator',
+        prog='auto-minesweeper',
         description='Generate a video of an AI solver playing Minesweeper')
     p.add_argument('--config', type=Path, default=None, help='path to a TOML config')
 
