@@ -4,6 +4,7 @@ Generates MP4 videos of an AI solver playing Minesweeper on a configurable
 board. The board is rendered with a classic Windows-XP look, complete with an
 animated cursor moving between cells. Output videos are silent — there is no
 audio stream of any kind.
+<img width="720" height="406" alt="demo" src="https://github.com/user-attachments/assets/666b0156-fef7-4485-9422-e8f57aa7661c" />
 
 ## Pipeline
 
